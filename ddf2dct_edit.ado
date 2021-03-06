@@ -1,5 +1,6 @@
-//Modified version of ddf2dct to handle SIPP 1980s files
-//Kye Lippold
+* Modified version of ddf2dct to handle SIPP 1980s files
+* - Modified by Kye Lippold
+* based on ddf2dct from SSC, by Austin Nichols
 *! ddf2dct 1.1 10 March 2008 austinnichols@gmail.com
 *! program to convert DDF files describing e.g. US Census data
 *! to Stata dct and do files
