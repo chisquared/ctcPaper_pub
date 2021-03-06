@@ -641,7 +641,12 @@ lab def inc_typ 1 "Below Plateau" 2 "Near Plateau" 3 "Above Plateau"
 lab val inc_typ inc_typ
 
 compress
+save $main/ctcPaper/rd_sample_full, replace
+
+use $main/ctcPaper/rd_sample_full, clear
+keep lgtkey-lgtwt pid hid year par_depx par_race par_educ par_marr par_age par_age2 met par_obs lag_obs agem*  hastearn DiRD* near* decPlus age_below age_above age_ab* age_be* lag_hastearn par_lfp lag_par_lfp below agerange_dird post samp cgroup par_wrk lag_par_wrk par_coll enroll grade has_childearn wt attrit next_months par_ctc par_dividends par_otherprop par_pensions par_gssi par_transfers par_ui has_par_* par_sing_lths endage inc_typ kwt_new* ebmnth tbyear par_taxinc lag_par_taxinc par_agi par_ctc_max D zabove zbelow 
 save $main/ctcPaper/rd_sample, replace
+
 timer off 1
 timer list
 
