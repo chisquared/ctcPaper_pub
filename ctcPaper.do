@@ -3,7 +3,7 @@
 *Set directories - change as needed
 if c(os)=="Windows" global main "C:\data\sipp" 
 else global main "~/data/sipp"
-global project "~/Files/Projects/CTC/ctcPaper/"
+global project "~/Files/Projects/CTC/ctcPaper"
 
 *dependencies
 ssc install egenmore
