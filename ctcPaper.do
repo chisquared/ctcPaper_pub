@@ -21,8 +21,8 @@ net install taxsimlocal32, from("http://www.nber.org/stata") replace
 *copy data files
 cd "$project"
 copy ddf2dct_edit.ado "$main/core/" , replace
-copy CompulsoryAttendance.xlsx "$main/ctcPaper/CompulsoryAttendance.xlsx", replace 
-copy taxsim_crosswalk.dta "$main/ctcPaper/taxsim_crosswalk.dta", replace 
+copy data/CompulsoryAttendance.xlsx "$main/ctcPaper/CompulsoryAttendance.xlsx", replace 
+copy data/taxsim_crosswalk.dta "$main/ctcPaper/taxsim_crosswalk.dta", replace 
 cd "$main"
 
 *download data and convert to Stata format
