@@ -5,4 +5,6 @@ This repository contains code to replicate results in the paper:
 
 Researchers may also find the code helpful because it creates a data file of [Survey of Income and Program Participation (SIPP)](https://www.census.gov/programs-surveys/sipp.html) data linked to [Taxsim](https://users.nber.org/~taxsim/taxsim32/), providing information on imputed tax liabilities in the SIPP from 1984 to 2016. 
 
+The master do-file, `ctcPaper.do`, details the order to run the files. 
+
 Comments and pull requests are welcome.
