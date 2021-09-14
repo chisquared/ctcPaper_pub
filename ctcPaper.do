@@ -3,7 +3,8 @@
 *Set directories - change as needed
 if c(os)=="Windows" global main "C:\data\sipp" 
 else global main "~/data/sipp"
-global project "~/Files/Projects/CTC/ctcPaper"
+if c(os)=="Windows" global project "~\Documents\ctc\ctcPaper_pub"
+else global project "~/Files/Projects/CTC/ctcPaper"
 
 *dependencies
 ssc install egenmore
@@ -31,6 +32,7 @@ do "$project/import_sipp.do"
 
 *process files to get yearly raw analysis files
 do "$project/prepare_sipp.do" 
+do "$project/compress_sipp.do" 
 
 *run taxsim and make combined file
 do "$project/prep_analysis.do"
