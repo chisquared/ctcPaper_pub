@@ -300,6 +300,7 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 			trentmort eprloan1rate tprloanamt tinc_bank tinc_bond ttrinc thnetworth thval_ast thdebt_ast thdebt_sec thdebt_usec theq_home) nogen
 		merge 1:1 ssuid pnum monthcode using "`coreloc'/pu20`panel'w`num'_5.dta", keepusing(edisabl taliamt tret1amt ///
 			tret2amt tret5amt tret3amt tret4amt tret6amt tret7amt tret8amt tlifeamt elmpnow elmptyp*yn tlmpamt tdeferamt ///
+			evatyp*yn esurtyp2yn tva*amt tsur2amt tssi_amt tuc2amt twcamt ttanf_amt tga_amt eenergy_asst eenergy_pmt1 eenergy_pmt2 eenergy_pmt3  ///
 			tsssamt tsscamt  tuc1amt twicamt tfs_amt efstatus edepclm eeitc efiling ewillfile tminc_amt eminc_typ*yn ) nogen
 		merge 1:1 ssuid pnum monthcode using "`coreloc'/pu20`panel'w`num'_6.dta", keepusing(tmdpay thipay) nogen
 
@@ -318,6 +319,8 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 			tret6amt tret7amt tret8amt ttrinc
 			elmpnow elmptyp*yn tlmpamt 
 			tsssamt tsscamt  tuc1amt twicamt tfs_amt
+			evatyp*yn esurtyp2yn tva*amt tsur2amt 
+			tssi_amt tuc2amt twcamt ttanf_amt tga_amt eenergy_asst eenergy_pmt1 eenergy_pmt2 eenergy_pmt3
 			rfpov tmwkhrs rmwkwjb rmesr enj_nowrk*
 			ebornus ecitizen espeak
 			efstatus edepclm eeitc efiling ewillfile trentmort eprloan1rate tprloanamt 
@@ -383,11 +386,13 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 		rename (pnum monthcode tehc_st ehresidencid rfamnum edob_bmonth adob_bmonth tdob_byear adob_byear 
 			epnspouse epnpar1 epnpar2 erefpar epar1typ epar2typ eedenroll renroll ejobcant 
 			tmwkhrs taliamt tret1amt tret2amt tret5amt tret3amt tret4amt tret6amt tret8amt tsssamt tsscamt  tuc1amt twicamt tfs_amt tlifeamt
+			tssi_amt tuc2amt twcamt ttanf_amt tga_amt eenergy_asst eenergy_pmt1 eenergy_pmt2 eenergy_pmt3
 			ejb_clwrk  tjb_hourly tjb_jobhrs ejb_rsend tjb_ind tjb_occ
 			thnetworth thval_ast thdebt_ast thdebt_sec thdebt_usec theq_home)
 			(epppnum rhcalmn tfipsst shhadid rfid ebmnth abmnth tbyear abyear 
 			epnspous epnmom epndad epnguard etypmom etypdad renroll eenrlm edisprev 
 			ehrsall t29amt t30amt t31amt t32amt t34amt t35amt t02amt t38amt t01amta t01amtk t05amt t25amt t27amt t36amt
+			t03amta t06amt t10amt t20amt t21amt  eegyast eegypmt1 eegypmt2 eegypmt3
 			eclwrk1 tpyrate1 ejbhrs1 ersend1 ejbind1 tjbocc1
 			thhtnw thhtwlth thhdebt thhscdbt thhuscbt thhtheq);
 		#delimit cr ; 
@@ -416,12 +421,18 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 		gen t55amt = .
 
 		gen t37amt = . //ttrinc is trusts only, and appears to be part of tpprpinc--estates are in misc income, but assume not taxable
-
+		egen t08amt = rowtotal(tva*amt tsur2amt)
+		
 		//variables with different codings
 		recode tehc_metro 0=3, gen(tmetro)
 		recode eeduc 41=40 42=43 43=44 44=45 45=46 46=47, gen(eeducate) //note 2008 "diploma / certificate" vs 2014 "one year college" - recode 2014 to "some college"
 		replace eeducate = 41 if ecert==1 & eeducate<43 //add Certificate info if no Associates+
 		recode erelrp 4=10 5=4 6=5 7=6 8=7 9=8 10=9, gen(errp)
+		gen evettyp = evatyp1yn==1
+		replace evettyp = 2 if esurtyp2yn==1
+		replace evettyp = 3 if evatyp2yn==1
+		replace evettyp = 4 if evatyp3yn==1
+		//also have GI bill and insurance proceeds options...
 
 		foreach var in  tdivinc tintinc t37amt t39amt severance t52amt t36amt t56amt {
 		replace `var' = round(`var'/12) //annual value, so divide out; round to match other monthly values
@@ -501,6 +512,10 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 		- t42amt - ira/keogh no longer broken out as providing income, just put in "other retirement income" field (per user's guide)
 		- t01amtk is now for age 18+ (there all year) rather than age 15+ (there in 4 months)
 		-  all RR (t02amt) income recorded is retirement
+		- t03amtk and t04amt are missing (adults and kids combined? and state combined with federal)
+		- evettyp changed to indicators
+		- twcamt excludes survivor's income (suppressed)
+		- eegyamt is only an indicator
 		*/
 
 
@@ -519,9 +534,11 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 		loc rfpov "rfpov"
 		loc ehrsall "ehrsall"
 		loc incvars ""
+		loc t06amt "t06amt"
 		if inlist("`panel'","96") loc rfpov "tfpov"
 		if inlist("`panel'","96","01") loc ehrsall ""
 		if inlist("`panel'","96","01") loc incvars "t37amt t53amt"
+		if inlist("`panel'","96","01") loc t06amt "t07amt"
 
 		#delimit ;
 		loc keepvars "ssuid eentaid epppnum lgtkey lgtmon rhcalyr rhcalmn spanel swave srefmon ghlfsam gvarstr tmetro
@@ -534,6 +551,7 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 			tptotinc tpearn tpprpinc tptrninc tpothinc  
 			tintinc t29amt t36amt t38amt t55amt t56amt t02amt t52amt `incvars'
 			tdivinc t30amt t31amt t32amt t34amt t35amt t39amt t42amt t01amta t01amtk t05amt t25amt t27amt
+			t03amta t03amtk t04amt `t06amt' evettyp t08amt t10amt t20amt t21amt eegyamt eegyast eegypmt1 eegypmt2 eegypmt3
 			rhtype `rfpov' ulftmain uentmain `ehrsall' rmwkwjb rmesr eclwrk1 tpyrate1 ejbhrs1
 			ersend1 ejbind1 tjbocc1" ;
 		#delimit cr ; 
@@ -557,6 +575,7 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 		if inlist("`panel'","01","96") {
 		ren eorigin ethncty
 		gen eorigin = inrange(ethncty,20,29) //Hispanic origins in 96 and 01 panels
+		ren t07amt t06amt
 		}
 
 		if inlist("`panel'","96") ren tfpov rfpov
@@ -589,6 +608,7 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 			grdcmpl higrade entry 
 			pwsuid pwentry pwpnum 
 			hmsa 
+			s03amt s06amt vettyp s08amt s10amt s20amt s21amt eastamt henrgy
 			htype fpov realft reaent uhours wksjob esr ws12012 ws12028 ws12024 ws1ind ws1occ" ;
 		#delimit cr ; 
 		keep `keepvars' 
@@ -658,6 +678,8 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 		- abmnth not available--seems from User's guide chap 4 and p. 10-36 to be not imputed except when intvw=3/4, but unclear
 		- using hitm36b istead of h5mis to map to eoutcome
 		- user's guide appears to be wrong in mapping s40amt to t39amt
+		- state SSI "imbedded in s75amt"--can't separate out
+		- all ssi in s03amt (both adult and kid??)
 		*/
 
 		#delimit ;
@@ -671,6 +693,7 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 			totinc earn prop tran other
 			s29amt s30amt s31amt s32amt s34amt s35amt  s01amta s01amtk s05amt s27amt
 			s36amt s38amt s55amt s56amt s02amta s52amt s37amt s53amt s54amt
+			s03amt s06amt vettyp s08amt s10amt s20amt s21amt eastamt
 			htype fpov realft reaent uhours wksjob esr ws12012 ws12028 ws12024 ws1ind ws1occ)
 			(rhcalmn swave srefmon ghlfsam gvarstr tmetro
 			tfipsst shhadid rfid tfearn wpfinwgt 
@@ -682,6 +705,7 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 			tptotinc tpearn tpprpinc tptrninc tpothinc  
 			t29amt t30amt t31amt t32amt t34amt t35amt  t01amta t01amtk t05amt t27amt
 			t36amt t38amt t55amt t56amt t02amt t52amt t37amt t53amt t54amt
+			t03amta t06amt evettyp t08amt t10amt t20amt t21amt eegyamt
 			rhtype rfpov ulftmain uentmain ehrsall rmwkwjb rmesr eclwrk1 tpyrate1 ersend1 ejbind1 tjbocc1);
 		#delimit cr ; 
 		*make versions of missing 1996 vars
@@ -709,6 +733,10 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 		//special handling for changing variable names
 		loc enroll "sc1656"
 		if inlist(`year',1984,1985) loc enroll "" //exclude for the two years with no data
+		loc vettyp "vet3058"
+		if `year'<1988 loc vettyp ""
+		loc vettyp2 "`vettyp'"
+		if `year'==1988 loc vettyp2 ""
 
 		loc birthvars "brthmn brthyr"
 		if inlist(`year',1984,1985) loc birthvars "u_brthmn u_brthyr" 
@@ -753,6 +781,7 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 			jint100* oint100* jint104* oint104*
 			grd_cmpl higrade pp_entry 
 			h*_msa
+			i03amt* i06amt* i08amt* i10amt* i20amt* i21amt* h*_4824 h*_enrgy
 			f*_pov* sc1230 wksjb* esr* ws1_2012 ws1_2028 ws1_2024 ws1_ind ws1_occ"; 
 		/* previous wave vars found via SIPP UG 2nd edition, p. 5-3 of "userguide_notes.pdf") */
 		/* matches to 1990 vars as follows:
@@ -786,7 +815,7 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 			loc prev_wave_include "`prev_wave1'"
 			}
 			if `k'==`num'+2 loc reasleft_include "`reasleft3'"
-			use `keepvars' `birthvars' `fnlwgt' `reasleft_include' `prev_wave_include' using "`coreloc'/sipp`panel'_core`k'.dta", clear
+			use `keepvars' `birthvars' `fnlwgt' `reasleft_include' `prev_wave_include' `vettyp' using "`coreloc'/sipp`panel'_core`k'.dta", clear
 			save $main/ctcPaper/sipp`panel'_trimmed`k', replace
 			}
 			if !inlist(`year',1984) {
@@ -794,20 +823,20 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 			loc last_nums2 = `num2'+2
 			if !inlist(`year',1989) loc last_nums2 = `num2'+3
 			forval k = `first_nums2'/`last_nums2' {
-			use `keepvars' `birthvars2' `fnlwgt2' `reasleft2' `prev_wave2' using "`coreloc'/sipp`panel2'_core`k'.dta", clear
+			use `keepvars' `birthvars2' `fnlwgt2' `reasleft2' `prev_wave2' `vettyp2' using "`coreloc'/sipp`panel2'_core`k'.dta", clear
 			save $main/ctcPaper/sipp`panel2'_trimmed`k', replace
 			}
 			}
 
 			use $main/ctcPaper/sipp`panel'_trimmed`num', clear
-			append using "$main/ctcPaper/sipp`panel'_trimmed`++num'", keep( `keepvars' `birthvars' `fnlwgt' `reasleft' `prev_wave') nolabel nonotes
-			append using "$main/ctcPaper/sipp`panel'_trimmed`++num'", keep( `keepvars' `birthvars' `fnlwgt' `reasleft3' `prev_wave') nolabel nonotes
-			if !inlist(`year',1989)  append using "$main/ctcPaper/sipp`panel'_trimmed`++num'", keep( `keepvars' `birthvars' `fnlwgt' `reasleft' `prev_wave') nolabel nonotes //short periods (end of panel)
+			append using "$main/ctcPaper/sipp`panel'_trimmed`++num'", keep( `keepvars' `birthvars' `fnlwgt' `reasleft' `prev_wave' `vettyp') nolabel nonotes
+			append using "$main/ctcPaper/sipp`panel'_trimmed`++num'", keep( `keepvars' `birthvars' `fnlwgt' `reasleft3' `prev_wave' `vettyp') nolabel nonotes
+			if !inlist(`year',1989)  append using "$main/ctcPaper/sipp`panel'_trimmed`++num'", keep( `keepvars' `birthvars' `fnlwgt' `reasleft' `prev_wave' `vettyp') nolabel nonotes //short periods (end of panel)
 			if !inlist(`year',1984) {
-			append using "$main/ctcPaper/sipp`panel2'_trimmed`num2'", keep( `keepvars' `birthvars2' `fnlwgt2' `reasleft2' `prev_wave2') nolabel nonotes //overlapping panels
-			append using "$main/ctcPaper/sipp`panel2'_trimmed`++num2'", keep( `keepvars' `birthvars2' `fnlwgt2' `reasleft2' `prev_wave2') nolabel nonotes
-			append using "$main/ctcPaper/sipp`panel2'_trimmed`++num2'", keep( `keepvars' `birthvars2' `fnlwgt2' `reasleft2' `prev_wave2') nolabel nonotes
-			if !inlist(`year',1989) append using "$main/ctcPaper/sipp`panel2'_trimmed`++num2'", keep( `keepvars' `reasleft2' `birthvars2' `fnlwgt2' `prev_wave2') nolabel nonotes //short panel in 1989
+			append using "$main/ctcPaper/sipp`panel2'_trimmed`num2'", keep( `keepvars' `birthvars2' `fnlwgt2' `reasleft2' `prev_wave2' `vettyp2') nolabel nonotes //overlapping panels
+			append using "$main/ctcPaper/sipp`panel2'_trimmed`++num2'", keep( `keepvars' `birthvars2' `fnlwgt2' `reasleft2' `prev_wave2' `vettyp2') nolabel nonotes
+			append using "$main/ctcPaper/sipp`panel2'_trimmed`++num2'", keep( `keepvars' `birthvars2' `fnlwgt2' `reasleft2' `prev_wave2' `vettyp2') nolabel nonotes
+			if !inlist(`year',1989) append using "$main/ctcPaper/sipp`panel2'_trimmed`++num2'", keep( `keepvars' `reasleft2' `birthvars2' `fnlwgt2' `prev_wave2' `vettyp2') nolabel nonotes //short panel in 1989
 			}
 		* end extraction
 
@@ -837,6 +866,7 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 			age_@ rrp_@ ms_@ pnsp_@ pnpt_@ h@_tenur
 			pptotin@ pp_earn@ pp_prop@ pp_tran@ ppother@ 
 			i29amt@ i30amt@ i31amt@ i32amt@ i34amt@ i35amt@ i01amt@ i05amt@ wicval@ i27amt@ i02amt@ i36amt@ i38amt@ i52amt@ i55amt@ i56amt@  i37amt@ i53amt@ i54amt@   
+			i03amt@ i06amt@ i08amt@ i10amt@ i20amt@ i21amt@ h@_4824 h@_enrgy
 			jdir110@ odir110@ jdic110@ odic110@ h@_msa
 			jint100@ oint100@ jint104@ oint104@
 			f@_pov wksjb@ esr_@,
@@ -949,6 +979,7 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 			i29amt i30amt i31amt i32amt i34amt i35amt i01amt i05amt i27amt i02amt i36amt i38amt i52amt i55amt i56amt i37amt i53amt i54amt 
 			ethnicty grd_cmpl h_msa jdic110 odic110 jdir110 odir110
 			jint100 oint100 jint104 oint104
+			i03amt i06amt  i08amt i10amt i20amt i21amt h_4824 h_enrgy
 			f_pov sc1230 wksjb esr_ ws1_2012 ws1_2028 ws1_2024 ws1_ind ws1_occ)
 			(rhcalmn swave ghlfsam gvarstr tmetro
 			tfipsst shhadid rfid tfearn wpfinwgt 
@@ -961,8 +992,10 @@ foreach year in 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996
 			t29amt t30amt t31amt t32amt t34amt t35amt t01amta t05amt t27amt t02amt t36amt t38amt t52amt t55amt t56amt t37amt t53amt t54amt     
 			ethncty grdcmpl hmsa j110ri o110ri j110 o110 
 			j10003 o10003 j10407 o10407
+			t03amta t06amt  t08amt t10amt t20amt t21amt eegyamt henrgy
 			rfpov ehrsall rmwkwjb rmesr eclwrk1 tpyrate1 ersend1 ejbind1 tjbocc1);
 		#delimit cr ; 
+		cap ren vet3058 evettyp
 		*make versions of missing 1996 vars
 		gen t25amt = wicval / 100
 		gen t39amt = 0 //no lump sum retirement question asked
